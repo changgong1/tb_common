@@ -3,23 +3,26 @@ module github.com/tokenbankteam/tb_common
 go 1.12
 
 require (
-	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973
+	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575
-	github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7
+	github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7 // indirect
 	github.com/gin-gonic/gin v0.0.0-20170702092826-d459835d2b07
 	github.com/go-redis/redis v6.13.0+incompatible
 	github.com/go-sql-driver/mysql v1.4.0
-	github.com/golang/protobuf v0.0.0-20180720233116-427e165155e0
 	github.com/lib/pq v0.0.0-20180523175426-90697d60dd84
 	github.com/mattn/go-isatty v0.0.4
-	github.com/matttproud/golang_protobuf_extensions v1.0.1
+	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/onsi/ginkgo v1.16.4 // indirect
+	github.com/onsi/gomega v1.13.0 // indirect
 	github.com/prometheus/client_golang v0.9.0-pre1
-	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910
-	github.com/prometheus/common v0.0.0-20180518154759-7600349dcfe1
-	github.com/prometheus/procfs v0.0.0-20180705121852-ae68e2d4c00f
-	github.com/ugorji/go v0.0.0-20180712102745-2e1067cd04ec
-	gopkg.in/go-playground/validator.v8 v8.18.2
-	gopkg.in/yaml.v2 v2.2.1
+	github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910 // indirect
+	github.com/prometheus/common v0.0.0-20180518154759-7600349dcfe1 // indirect
+	github.com/prometheus/procfs v0.0.0-20180705121852-ae68e2d4c00f // indirect
+	github.com/stretchr/testify v1.7.0 // indirect
+	github.com/ugorji/go v0.0.0-20180712102745-2e1067cd04ec // indirect
+	google.golang.org/appengine v0.0.0-00010101000000-000000000000 // indirect
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
+	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
 )
 
 replace (

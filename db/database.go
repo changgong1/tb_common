@@ -5,6 +5,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	"sync"
+	"time"
 
 	log "github.com/cihub/seelog"
 )
@@ -23,6 +24,10 @@ func NewDatabase(dbName string, config *DBConfig) (*Database, error) {
 		log.Errorf("open database error %v", err)
 		return nil, err
 	}
+
+	database.SetConnMaxLifetime(time.Duration(instConfig.GetMaxLifetime()) * time.Second)
+	database.SetMaxIdleConns(instConfig.GetMaxIdleConns())
+	database.SetMaxOpenConns(instConfig.GetMaxOpenConns())
 
 	if err := database.Ping(); err != nil {
 		log.Errorf("ping database error %v", err)

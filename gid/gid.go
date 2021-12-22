@@ -49,7 +49,7 @@ func (s *Server) GetId() (int64, error) {
 		}
 		reties--
 		result, err = s.Get()
-		if err != nil {
+		if err != nil || result == nil {
 			log.Errorf("get error %v", err)
 			time.Sleep(time.Millisecond * 100)
 		} else {

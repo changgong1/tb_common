@@ -41,6 +41,18 @@ func (s *Model) GetUkByItem(n string) (*Item, error) {
 	item := new(Item)
 	if err := s.Col.Find(bson.M{"n": n}).All(&item); err != nil {
 		if err == mgo.ErrNotFound {
+			return nil, err
+		}
+		log.Errorf("get uk by item n %v error %v", n, err)
+		return nil, err
+	}
+	return item, nil
+}
+
+func (s *Model) GetUkByItemCheckExist(n string) (*Item, error) {
+	item := new(Item)
+	if err := s.Col.Find(bson.M{"n": n}).All(&item); err != nil {
+		if err == mgo.ErrNotFound {
 			result, err := s.GidServer.Get()
 			if err != nil {
 				return nil, err

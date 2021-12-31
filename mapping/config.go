@@ -5,5 +5,5 @@ type AddressConfig struct {
 	Database   string `default:"mapping"`
 	Col        string `default:"addr"`
 	GidAddr    string `default:"http://gid.mytokenpocket.vip"`
-	IdPoolSize int    `default:"10000""`
+	IdPoolSize int    `default:"1000""`
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/tokenbankteam/tb_common/gid"
+	"time"
 )
 
 type Item struct {
@@ -14,10 +15,11 @@ type Item struct {
 }
 
 type Model struct {
-	Session   *mgo.Session
-	Database  *mgo.Database
-	Col       *mgo.Collection
-	GidServer *gid.Server
+	Config   *AddressConfig // 配置信息
+	Session  *mgo.Session
+	Database *mgo.Database
+	Col      *mgo.Collection
+	IdPool   chan int64
 }
 
 func NewMapping(config *AddressConfig) (*Model, error) {
@@ -29,12 +31,28 @@ func NewMapping(config *AddressConfig) (*Model, error) {
 	database := session.DB(config.Database)
 	col := database.C(config.Col)
 	gidServer := gid.NewServer(config.GidAddr)
-	return &Model{
-		Session:   session,
-		Database:  database,
-		Col:       col,
-		GidServer: gidServer,
-	}, nil
+	model1 := &Model{
+		Session:  session,
+		Database: database,
+		Col:      col,
+		IdPool:   make(chan int64, config.IdPoolSize),
+	}
+	go func() {
+		for {
+			if len(model1.IdPool) < config.IdPoolSize {
+				result, err := gidServer.Get()
+				if err != nil || result == nil {
+					log.Errorf("gid get id error %v", err)
+					time.Sleep(time.Millisecond * 10)
+					continue
+				}
+				model1.IdPool <- result.Id
+			} else {
+				time.Sleep(time.Millisecond * 10)
+			}
+		}
+	}()
+	return model1, nil
 }
 
 func (s *Model) GetUkByItem(n string) (*Item, error) {
@@ -53,14 +71,11 @@ func (s *Model) GetUkByItemCheckExist(n string) (*Item, error) {
 	item := new(Item)
 	if err := s.Col.Find(bson.M{"n": n}).All(&item); err != nil {
 		if err == mgo.ErrNotFound {
-			result, err := s.GidServer.Get()
-			if err != nil {
+			id := <-s.IdPool
+			if err = s.Col.Insert(bson.M{"n": n, "uk": id}); err != nil {
 				return nil, err
 			}
-			if err = s.Col.Insert(bson.M{"n": n, "uk": result.Id}); err != nil {
-				return nil, err
-			}
-			return &Item{N: n, Uk: result.Id}, nil
+			return &Item{N: n, Uk: id}, nil
 		}
 		log.Errorf("get uk by item n %v error %v", n, err)
 		return nil, err

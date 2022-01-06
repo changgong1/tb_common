@@ -1,174 +1,74 @@
 package mapping
 
 import (
-	"context"
-	"errors"
-	log "github.com/cihub/seelog"
-	"github.com/tokenbankteam/tb_common/gid"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"strings"
+	"github.com/bluele/gcache"
 	"time"
 )
 
-type Item struct {
-	N  string `json:"n"`
-	Uk int64  `json:"uk"`
+type Mapping struct {
+	model       *Model
+	NCache      gcache.Cache
+	UkCache     gcache.Cache
+	cacheSwitch bool
 }
 
-type Model struct {
-	Col       *mongo.Collection
-	GidServer *gid.Server
-}
-
-func NewMapping(config *AddressConfig) (*Model, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.MongoAddr))
+func NewMapping(config *AddressConfig) (*Mapping, error) {
+	m := &Mapping{}
+	model, err := newModel(config)
 	if err != nil {
-		log.Errorf("mongo connect error %v", err)
 		return nil, err
 	}
-	database := client.Database(config.Database)
-	col := database.Collection(config.Col)
-	gidServer := gid.NewServer(config.GidAddr)
-	return &Model{
-		Col:       col,
-		GidServer: gidServer,
-	}, nil
+	m.model = model
+	if config.CacheSize > 0 {
+		m.NCache = gcache.New(config.CacheSize).Expiration(time.Duration(config.Expire)).LRU().LoaderFunc(func(i interface{}) (interface{}, error) {
+			return m.model.getUkByItemCheckExist(i.(string))
+		}).Build()
+		m.UkCache = gcache.New(config.CacheSize).Expiration(time.Duration(config.Expire)).LRU().LoaderFunc(func(i interface{}) (interface{}, error) {
+			return m.model.getItemByUk(i.(int64))
+		}).Build()
+		m.cacheSwitch = true
+	}
+	return m, nil
 }
 
-func (s *Model) GetUkByItem(n string) (*Item, error) {
-	item := new(Item)
-	if err := s.Col.FindOne(context.Background(), bson.M{"n": n}).Decode(&item); err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, err
+func (s *Mapping) GetUkByItem(n string) (*Item, error) {
+	if s.cacheSwitch {
+		result, err := s.NCache.Get(n)
+		if err == nil && result != nil {
+			return result.(*Item), nil
 		}
-		log.Errorf("get uk by item n %v error %v", n, err)
-		return nil, err
 	}
-	return item, nil
+	return s.model.getUkByItem(n)
 }
 
-func (s *Model) GetUkByItemCheckExist(n string) (*Item, error) {
-	item := new(Item)
-	if err := s.Col.FindOne(context.Background(), bson.M{"n": n}).Decode(&item); err != nil {
-		if err == mongo.ErrNoDocuments {
-			id, err := s.GidServer.GetId()
-			if err != nil {
-				return nil, err
-			}
-			if _, err = s.Col.InsertOne(context.Background(), bson.M{"n": n, "uk": id}); err != nil {
-				if !mongo.IsDuplicateKeyError(err) {
-					return nil, err
-				}
-				if err = s.Col.FindOne(context.Background(), bson.M{"n": n}).Decode(&item); err != nil {
-					return nil, err
-				}
-				return item, err
-			}
-			return &Item{N: n, Uk: id}, nil
+func (s *Mapping) GetUkByItemCheckExist(n string) (*Item, error) {
+	if s.cacheSwitch {
+		result, err := s.NCache.Get(n)
+		if err == nil && result != nil {
+			return result.(*Item), nil
 		}
-		log.Errorf("get uk by item n %v error %v", n, err)
-		return nil, err
 	}
-	return item, nil
+	return s.model.getUkByItemCheckExist(n)
 }
 
-func (s *Model) GetUkByItemList(ns []string) ([]*Item, error) {
-	if len(ns) > 500 {
-		return nil, errors.New("params maximum limit exceeded")
-	}
-	list := make([]*Item, 0)
-	cursor, err := s.Col.Find(context.Background(), bson.M{"n": bson.M{"$in": ns}})
-	if err != nil {
-		log.Errorf("get uk by item list %v error %v", ns, err)
-		return nil, err
-	}
-	if err = cursor.All(context.Background(), &list); err != nil {
-		log.Errorf("get uk by item list %v error %v", ns, err)
-		return nil, err
-	}
-
-	return list, nil
+func (s *Mapping) GetUkByItemList(ns []string) ([]*Item, error) {
+	return s.model.getUkByItemList(ns)
 }
 
-func (s *Model) GetUkByItemListCheckExist(ns []string) ([]*Item, error) {
-	if len(ns) > 100 {
-		return nil, errors.New("params maximum limit exceeded")
-	}
-	list := make([]*Item, 0)
-	cursor, err := s.Col.Find(context.Background(), bson.M{"n": bson.M{"$in": ns}})
-	if err != nil {
-		log.Errorf("get uk by item list %v error %v", ns, err)
-		return nil, err
-	}
-	if err = cursor.All(context.Background(), &list); err != nil {
-		log.Errorf("get uk by item list %v error %v", ns, err)
-		return nil, err
-	}
-	if len(list) != len(ns) {
-		nmap := make(map[string]bool, 0)
-		for _, v := range list {
-			nmap[v.N] = true
-		}
-		num := len(ns) - len(list)
-		ids, err := s.GidServer.GetIds(num)
-		if err != nil {
-			return nil, err
-		}
-		if num != len(ids) {
-			return nil, errors.New("get ids error")
-		}
-		body := make([]interface{}, 0)
-		ns1 := make([]string, 0)
-		for _, v := range ns {
-			if ok := nmap[v]; ok {
-				continue
-			}
-			ns1 = append(ns1, v)
-		}
-		for i, v := range ns1 {
-			body = append(body, bson.M{"n": strings.ToLower(v), "uk": ids[i]})
-		}
-		opts := options.InsertMany().SetOrdered(false)
-		_, err = s.Col.InsertMany(context.Background(), body, opts)
-		if err != nil && !mongo.IsDuplicateKeyError(err) {
-			log.Errorf("insert many error %v", err)
-			return nil, err
-		}
-		items, err := s.GetUkByItemList(ns1)
-		if err != nil {
-			return nil, err
-		}
-		list = append(list, items...)
-	}
-	return list, nil
+func (s *Mapping) GetUkByItemListCheckExist(ns []string) ([]*Item, error) {
+	return s.model.getUkByItemListCheckExist(ns)
 }
 
-func (s *Model) GetItemByUk(uk int64) (*Item, error) {
-	item := new(Item)
-	if err := s.Col.FindOne(context.Background(), bson.M{"uk": uk}).Decode(&item); err != nil {
-		log.Errorf("get item by uk error %v", err)
-		return nil, err
+func (s *Mapping) GetItemByUk(uk int64) (*Item, error) {
+	if s.cacheSwitch {
+		result, err := s.UkCache.Get(uk)
+		if err == nil && result != nil {
+			return result.(*Item), nil
+		}
 	}
-	return item, nil
+	return s.model.getItemByUk(uk)
 }
 
-func (s *Model) GetItemByUkList(uks []int64) ([]*Item, error) {
-	if len(uks) > 500 {
-		return nil, errors.New("params maximum limit exceeded")
-	}
-	list := make([]*Item, 0)
-	cursor, err := s.Col.Find(context.Background(), bson.M{"uk": bson.M{"$in": uks}})
-	if err != nil {
-		log.Errorf("get item by uk list %v error %v", uks, err)
-		return nil, err
-	}
-	if err = cursor.All(context.Background(), &list); err != nil {
-		log.Errorf("get item by uk list %v error %v", uks, err)
-		return nil, err
-	}
-	return list, nil
+func (s *Mapping) GetItemByUkList(uks []int64) ([]*Item, error) {
+	return s.GetItemByUkList(uks)
 }

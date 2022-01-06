@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
+	github.com/bluele/gcache v0.0.2
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575
 	github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7 // indirect
 	github.com/gin-gonic/gin v0.0.0-20170702092826-d459835d2b07

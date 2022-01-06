@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var m *Model
+var m *Mapping
 
 func init() {
 	var err error
@@ -26,7 +26,7 @@ func init() {
 		fmt.Println(err)
 	}
 }
-func TestGetUkByItem(t *testing.T) {
+func TestInsert(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://127.0.0.1:27017"))
@@ -52,6 +52,15 @@ func TestGetUkByItem(t *testing.T) {
 	}
 	marshal, _ := json.Marshal(item)
 	fmt.Println(string(marshal))
+}
+func TestGetUkByItem(t *testing.T) {
+	result, err := m.GetUkByItem("test0")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	marshal, _ := json.Marshal(result)
+	t.Log(string(marshal))
 }
 
 func TestGetUkByItemCheckExist(t *testing.T) {

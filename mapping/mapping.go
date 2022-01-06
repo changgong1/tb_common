@@ -13,8 +13,8 @@ import (
 )
 
 type Item struct {
-	N  string
-	Uk int64
+	N  string `json:"n"`
+	Uk int64  `json:"uk"`
 }
 
 type Model struct {

@@ -1,12 +1,12 @@
 package gid
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
 var S = &Server{
-	UrlPrefix: "http://sonyflake.live.xunlei.com/",
+	UrlPrefix: "http://127.0.0.1:8082/",
 }
 
 func TestGetId(t *testing.T) {

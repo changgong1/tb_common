@@ -59,6 +59,30 @@ func (s *Server) GetId() (int64, error) {
 	return -1, err
 }
 
+func (s *Server) GetIds(num int) ([]int64, error) {
+	var err error
+	var result *Result
+	var reties int64 = 6
+	ids := make([]int64, 0)
+	for {
+		if reties <= 0 {
+			break
+		}
+		reties--
+		result, err = s.Get()
+		if err != nil || result == nil {
+			log.Errorf("get error %v", err)
+			time.Sleep(time.Millisecond * 100)
+		} else {
+			ids = append(ids, result.Id)
+		}
+		if len(ids) == num {
+			return ids, err
+		}
+	}
+	return nil, err
+}
+
 func (s *Server) Get() (*Result, error) {
 	req, err := http.NewRequest("POST", s.UrlPrefix, strings.NewReader(""))
 	if err != nil {

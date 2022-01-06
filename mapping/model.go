@@ -94,7 +94,7 @@ func (s *Model) getUkByItemCheckExist(n string) (*Item, error) {
 }
 
 func (s *Model) getUkByItemList(ns []string) ([]*Item, error) {
-	if len(ns) > 500 {
+	if len(ns) > 100 {
 		return nil, errors.New("params maximum limit exceeded")
 	}
 	list := make([]*Item, 0)
@@ -112,7 +112,7 @@ func (s *Model) getUkByItemList(ns []string) ([]*Item, error) {
 }
 
 func (s *Model) getUkByItemListCheckExist(ns []string) ([]*Item, error) {
-	if len(ns) > 500 {
+	if len(ns) > 100 {
 		return nil, errors.New("params maximum limit exceeded")
 	}
 	list := make([]*Item, 0)
@@ -165,7 +165,7 @@ func (s *Model) getUkByItemListCheckExist(ns []string) ([]*Item, error) {
 }
 
 func (s *Model) getUkByItems(ns ...string) ([]*Item, error) {
-	if len(ns) > 500 {
+	if len(ns) > 100 {
 		return nil, errors.New("params maximum limit exceeded")
 	}
 	list := make([]*Item, 0)
@@ -227,7 +227,7 @@ func (s *Model) getItemByUk(uk int64) (*Item, error) {
 }
 
 func (s *Model) getItemByUkList(uks []int64) ([]*Item, error) {
-	if len(uks) > 500 {
+	if len(uks) > 100 {
 		return nil, errors.New("params maximum limit exceeded")
 	}
 	list := make([]*Item, 0)
@@ -244,7 +244,7 @@ func (s *Model) getItemByUkList(uks []int64) ([]*Item, error) {
 }
 
 func (s *Model) getItemByUks(uks ...int64) ([]*Item, error) {
-	if len(uks) > 500 {
+	if len(uks) > 100 {
 		return nil, errors.New("params maximum limit exceeded")
 	}
 	list := make([]*Item, 0)

@@ -123,11 +123,13 @@ func (s *Model) GetUkByItemListCheckExist(ns []string) ([]*Item, error) {
 		}
 		body := make([]interface{}, 0)
 		ns1 := make([]string, 0)
-		for i, v := range ns {
+		for _, v := range ns {
 			if ok := nmap[v]; ok {
 				continue
 			}
 			ns1 = append(ns1, v)
+		}
+		for i, v := range ns1 {
 			body = append(body, bson.M{"n": strings.ToLower(v), "uk": ids[i]})
 		}
 		opts := options.InsertMany().SetOrdered(false)

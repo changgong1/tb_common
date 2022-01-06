@@ -87,9 +87,22 @@ func TestGetUkByItemListCheckExist(t *testing.T) {
 }
 
 func TestGetItemByUk(t *testing.T) {
-
+	result, err := m.GetItemByUk(389102355586482177)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	marshal, _ := json.Marshal(result)
+	t.Log(string(marshal))
 }
 
 func TestGetItemByUkList(t *testing.T) {
-
+	params := []int64{389102355586482177, 389102378000842753, 389102386574000129, 389103705900711937}
+	result, err := m.GetItemByUkList(params)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	marshal, _ := json.Marshal(result)
+	t.Log(string(marshal))
 }

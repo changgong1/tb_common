@@ -4,10 +4,10 @@ go 1.12
 
 require (
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
+	github.com/bluele/gcache v0.0.2
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575
 	github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7 // indirect
 	github.com/gin-gonic/gin v0.0.0-20170702092826-d459835d2b07
-	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8
 	github.com/go-redis/redis v6.13.0+incompatible
 	github.com/go-sql-driver/mysql v1.4.0
 	github.com/lib/pq v0.0.0-20180523175426-90697d60dd84
@@ -21,6 +21,7 @@ require (
 	github.com/prometheus/procfs v0.0.0-20180705121852-ae68e2d4c00f // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/ugorji/go v0.0.0-20180712102745-2e1067cd04ec // indirect
+	go.mongodb.org/mongo-driver v1.8.2
 	google.golang.org/appengine v0.0.0-00010101000000-000000000000 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect

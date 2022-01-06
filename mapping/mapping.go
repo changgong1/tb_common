@@ -1,117 +1,74 @@
 package mapping
 
 import (
-	"errors"
-	log "github.com/cihub/seelog"
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
-	"github.com/tokenbankteam/tb_common/gid"
+	"github.com/bluele/gcache"
 	"time"
 )
 
-type Item struct {
-	N  string
-	Uk int64
+type Mapping struct {
+	model       *Model
+	NCache      gcache.Cache
+	UkCache     gcache.Cache
+	cacheSwitch bool
 }
 
-type Model struct {
-	Config   *AddressConfig // 配置信息
-	Session  *mgo.Session
-	Database *mgo.Database
-	Col      *mgo.Collection
-	IdPool   chan int64
-}
-
-func NewMapping(config *AddressConfig) (*Model, error) {
-	session, err := mgo.Dial(config.MongoAddr)
+func NewMapping(config *AddressConfig) (*Mapping, error) {
+	m := &Mapping{}
+	model, err := newModel(config)
 	if err != nil {
-		log.Errorf("get session error: %v", err)
 		return nil, err
 	}
-	database := session.DB(config.Database)
-	col := database.C(config.Col)
-	gidServer := gid.NewServer(config.GidAddr)
-	model1 := &Model{
-		Session:  session,
-		Database: database,
-		Col:      col,
-		IdPool:   make(chan int64, config.IdPoolSize),
+	m.model = model
+	if config.CacheSize > 0 {
+		m.NCache = gcache.New(config.CacheSize).Expiration(time.Duration(config.Expire)).LRU().LoaderFunc(func(i interface{}) (interface{}, error) {
+			return m.model.getUkByItemCheckExist(i.(string))
+		}).Build()
+		m.UkCache = gcache.New(config.CacheSize).Expiration(time.Duration(config.Expire)).LRU().LoaderFunc(func(i interface{}) (interface{}, error) {
+			return m.model.getItemByUk(i.(int64))
+		}).Build()
+		m.cacheSwitch = true
 	}
-	go func() {
-		for {
-			if len(model1.IdPool) < config.IdPoolSize {
-				result, err := gidServer.Get()
-				if err != nil || result == nil {
-					log.Errorf("gid get id error %v", err)
-					time.Sleep(time.Millisecond * 10)
-					continue
-				}
-				model1.IdPool <- result.Id
-			} else {
-				time.Sleep(time.Millisecond * 10)
-			}
+	return m, nil
+}
+
+func (s *Mapping) GetUkByItem(n string) (*Item, error) {
+	if s.cacheSwitch {
+		result, err := s.NCache.Get(n)
+		if err == nil && result != nil {
+			return result.(*Item), nil
 		}
-	}()
-	return model1, nil
+	}
+	return s.model.getUkByItem(n)
 }
 
-func (s *Model) GetUkByItem(n string) (*Item, error) {
-	item := new(Item)
-	if err := s.Col.Find(bson.M{"n": n}).All(&item); err != nil {
-		if err == mgo.ErrNotFound {
-			return nil, err
+func (s *Mapping) GetUkByItemCheckExist(n string) (*Item, error) {
+	if s.cacheSwitch {
+		result, err := s.NCache.Get(n)
+		if err == nil && result != nil {
+			return result.(*Item), nil
 		}
-		log.Errorf("get uk by item n %v error %v", n, err)
-		return nil, err
 	}
-	return item, nil
+	return s.model.getUkByItemCheckExist(n)
 }
 
-func (s *Model) GetUkByItemCheckExist(n string) (*Item, error) {
-	item := new(Item)
-	if err := s.Col.Find(bson.M{"n": n}).All(&item); err != nil {
-		if err == mgo.ErrNotFound {
-			id := <-s.IdPool
-			if err = s.Col.Insert(bson.M{"n": n, "uk": id}); err != nil {
-				return nil, err
-			}
-			return &Item{N: n, Uk: id}, nil
+func (s *Mapping) GetUkByItemList(ns []string) ([]*Item, error) {
+	return s.model.getUkByItemList(ns)
+}
+
+func (s *Mapping) GetUkByItemListCheckExist(ns []string) ([]*Item, error) {
+	return s.model.getUkByItemListCheckExist(ns)
+}
+
+func (s *Mapping) GetItemByUk(uk int64) (*Item, error) {
+	if s.cacheSwitch {
+		result, err := s.UkCache.Get(uk)
+		if err == nil && result != nil {
+			return result.(*Item), nil
 		}
-		log.Errorf("get uk by item n %v error %v", n, err)
-		return nil, err
 	}
-	return item, nil
+	return s.model.getItemByUk(uk)
 }
 
-func (s *Model) GetUkByItemList(ns []string) ([]*Item, error) {
-	if len(ns) > 500 {
-		return nil, errors.New("params maximum limit exceeded")
-	}
-	list := make([]*Item, 0)
-	if err := s.Col.Find(bson.M{"n": bson.M{"$in": ns}}).All(&list); err != nil {
-		log.Errorf("get uk by item list %v error %v", ns, err)
-		return nil, err
-	}
-	return list, nil
-}
-
-func (s *Model) GetItemByUk(uk int64) (*Item, error) {
-	item := new(Item)
-	if err := s.Col.Find(bson.M{"uk": uk}).All(&item); err != nil {
-		log.Errorf("get item by uk error %v", err)
-		return nil, err
-	}
-	return item, nil
-}
-
-func (s *Model) GetItemByUkList(uks []int64) ([]*Item, error) {
-	if len(uks) > 500 {
-		return nil, errors.New("params maximum limit exceeded")
-	}
-	list := make([]*Item, 0)
-	if err := s.Col.Find(bson.M{"uk": bson.M{"$in": uks}}).All(&list); err != nil {
-		log.Errorf("get item by uk list %v error %v", uks, err)
-		return nil, err
-	}
-	return list, nil
+func (s *Mapping) GetItemByUkList(uks []int64) ([]*Item, error) {
+	return s.GetItemByUkList(uks)
 }

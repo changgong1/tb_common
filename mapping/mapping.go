@@ -59,6 +59,10 @@ func (s *Mapping) GetUkByItemListCheckExist(ns []string) ([]*Item, error) {
 	return s.model.getUkByItemListCheckExist(ns)
 }
 
+func (s *Mapping) GetUkByItems(ns ...string) ([]*Item, error) {
+	return s.model.getUkByItems(ns...)
+}
+
 func (s *Mapping) GetItemByUk(uk int64) (*Item, error) {
 	if s.cacheSwitch {
 		result, err := s.UkCache.Get(uk)
@@ -70,5 +74,9 @@ func (s *Mapping) GetItemByUk(uk int64) (*Item, error) {
 }
 
 func (s *Mapping) GetItemByUkList(uks []int64) ([]*Item, error) {
-	return s.GetItemByUkList(uks)
+	return s.model.getItemByUkList(uks)
+}
+
+func (s *Mapping) GetItemsByUks(uks ...int64) ([]*Item, error) {
+	return s.model.getItemByUks(uks...)
 }

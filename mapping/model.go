@@ -112,7 +112,60 @@ func (s *Model) getUkByItemList(ns []string) ([]*Item, error) {
 }
 
 func (s *Model) getUkByItemListCheckExist(ns []string) ([]*Item, error) {
-	if len(ns) > 100 {
+	if len(ns) > 500 {
+		return nil, errors.New("params maximum limit exceeded")
+	}
+	list := make([]*Item, 0)
+	cursor, err := s.Col.Find(context.Background(), bson.M{"n": bson.M{"$in": ns}})
+	if err != nil {
+		log.Errorf("get uk by item list %v error %v", ns, err)
+		return nil, err
+	}
+	if err = cursor.All(context.Background(), &list); err != nil {
+		log.Errorf("get uk by item list %v error %v", ns, err)
+		return nil, err
+	}
+	if len(list) != len(ns) {
+		nmap := make(map[string]bool, 0)
+		for _, v := range list {
+			nmap[v.N] = true
+		}
+		num := len(ns) - len(list)
+		ids, err := s.GidServer.GetIds(num)
+		if err != nil {
+			return nil, err
+		}
+		if num != len(ids) {
+			return nil, errors.New("get ids error")
+		}
+		body := make([]interface{}, 0)
+		ns1 := make([]string, 0)
+		for _, v := range ns {
+			if ok := nmap[v]; ok {
+				continue
+			}
+			ns1 = append(ns1, v)
+		}
+		for i, v := range ns1 {
+			body = append(body, bson.M{"n": strings.ToLower(v), "uk": ids[i]})
+		}
+		opts := options.InsertMany().SetOrdered(false)
+		_, err = s.Col.InsertMany(context.Background(), body, opts)
+		if err != nil && !mongo.IsDuplicateKeyError(err) {
+			log.Errorf("insert many error %v", err)
+			return nil, err
+		}
+		items, err := s.getUkByItemList(ns1)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, items...)
+	}
+	return list, nil
+}
+
+func (s *Model) getUkByItems(ns ...string) ([]*Item, error) {
+	if len(ns) > 500 {
 		return nil, errors.New("params maximum limit exceeded")
 	}
 	list := make([]*Item, 0)
@@ -174,6 +227,23 @@ func (s *Model) getItemByUk(uk int64) (*Item, error) {
 }
 
 func (s *Model) getItemByUkList(uks []int64) ([]*Item, error) {
+	if len(uks) > 500 {
+		return nil, errors.New("params maximum limit exceeded")
+	}
+	list := make([]*Item, 0)
+	cursor, err := s.Col.Find(context.Background(), bson.M{"uk": bson.M{"$in": uks}})
+	if err != nil {
+		log.Errorf("get item by uk list %v error %v", uks, err)
+		return nil, err
+	}
+	if err = cursor.All(context.Background(), &list); err != nil {
+		log.Errorf("get item by uk list %v error %v", uks, err)
+		return nil, err
+	}
+	return list, nil
+}
+
+func (s *Model) getItemByUks(uks ...int64) ([]*Item, error) {
 	if len(uks) > 500 {
 		return nil, errors.New("params maximum limit exceeded")
 	}

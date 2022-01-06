@@ -21,6 +21,7 @@ func init() {
 		Database:  "mapping",
 		Col:       "addr",
 		GidAddr:   "http://127.0.0.1:8082/",
+		CacheSize: 1024,
 	})
 	if err != nil {
 		fmt.Println(err)
@@ -64,7 +65,7 @@ func TestGetUkByItem(t *testing.T) {
 }
 
 func TestGetUkByItemCheckExist(t *testing.T) {
-	result, err := m.GetUkByItemCheckExist("test2")
+	result, err := m.GetUkByItemCheckExist("test")
 	if err != nil {
 		t.Error(err)
 		return

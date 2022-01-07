@@ -94,9 +94,6 @@ func (s *Model) getUkByItemCheckExist(n string) (*Item, error) {
 }
 
 func (s *Model) getUkByItemList(ns []string) ([]*Item, error) {
-	if len(ns) > 100 {
-		return nil, errors.New("params maximum limit exceeded")
-	}
 	list := make([]*Item, 0)
 	cursor, err := s.Col.Find(context.Background(), bson.M{"n": bson.M{"$in": ns}})
 	if err != nil {
@@ -111,10 +108,8 @@ func (s *Model) getUkByItemList(ns []string) ([]*Item, error) {
 	return list, nil
 }
 
-func (s *Model) getUkByItemListCheckExist(ns []string) ([]*Item, error) {
-	if len(ns) > 100 {
-		return nil, errors.New("params maximum limit exceeded")
-	}
+func (s *Model) getUkByItemListCheckExist(ns []string) (map[string]int64, error) {
+	dataMap := make(map[string]int64, 0)
 	list := make([]*Item, 0)
 	cursor, err := s.Col.Find(context.Background(), bson.M{"n": bson.M{"$in": ns}})
 	if err != nil {
@@ -125,11 +120,10 @@ func (s *Model) getUkByItemListCheckExist(ns []string) ([]*Item, error) {
 		log.Errorf("get uk by item list %v error %v", ns, err)
 		return nil, err
 	}
+	for _, v := range list {
+		dataMap[v.N] = v.Uk
+	}
 	if len(list) != len(ns) {
-		nmap := make(map[string]bool, 0)
-		for _, v := range list {
-			nmap[v.N] = true
-		}
 		num := len(ns) - len(list)
 		ids, err := s.GidServer.GetIds(num)
 		if err != nil {
@@ -141,7 +135,7 @@ func (s *Model) getUkByItemListCheckExist(ns []string) ([]*Item, error) {
 		body := make([]interface{}, 0)
 		ns1 := make([]string, 0)
 		for _, v := range ns {
-			if ok := nmap[v]; ok {
+			if _, ok := dataMap[v]; ok {
 				continue
 			}
 			ns1 = append(ns1, v)
@@ -159,15 +153,14 @@ func (s *Model) getUkByItemListCheckExist(ns []string) ([]*Item, error) {
 		if err != nil {
 			return nil, err
 		}
-		list = append(list, items...)
+		for _, v := range items {
+			dataMap[v.N] = v.Uk
+		}
 	}
-	return list, nil
+	return dataMap, nil
 }
 
 func (s *Model) getUkByItems(ns ...string) (map[string]int64, error) {
-	if len(ns) > 100 {
-		return nil, errors.New("params maximum limit exceeded")
-	}
 	dataMap := make(map[string]int64, 0)
 	list := make([]*Item, 0)
 	cursor, err := s.Col.Find(context.Background(), bson.M{"n": bson.M{"$in": ns}})
@@ -229,9 +222,6 @@ func (s *Model) getItemByUk(uk int64) (*Item, error) {
 }
 
 func (s *Model) getItemByUkList(uks []int64) ([]*Item, error) {
-	if len(uks) > 100 {
-		return nil, errors.New("params maximum limit exceeded")
-	}
 	list := make([]*Item, 0)
 	cursor, err := s.Col.Find(context.Background(), bson.M{"uk": bson.M{"$in": uks}})
 	if err != nil {
@@ -246,9 +236,6 @@ func (s *Model) getItemByUkList(uks []int64) ([]*Item, error) {
 }
 
 func (s *Model) getItemByUks(uks ...int64) (map[int64]string, error) {
-	if len(uks) > 100 {
-		return nil, errors.New("params maximum limit exceeded")
-	}
 	dataMap := make(map[int64]string)
 	list := make([]*Item, 0)
 	cursor, err := s.Col.Find(context.Background(), bson.M{"uk": bson.M{"$in": uks}})

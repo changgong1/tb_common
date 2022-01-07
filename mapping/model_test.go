@@ -86,7 +86,11 @@ func TestGetUkByItemList(t *testing.T) {
 }
 
 func TestGetUkByItemListCheckExist(t *testing.T) {
-	params := []string{"test", "test1", "test2", "test3", "test4"}
+	params := make(map[string]interface{}, 0)
+	params["test"] = 0
+	params["test"] = 0
+	params["test"] = 0
+	params["test"] = 0
 	result, err := m.GetUkByItemListCheckExist(params)
 	if err != nil {
 		t.Error(err)
@@ -107,7 +111,11 @@ func TestGetItemByUk(t *testing.T) {
 }
 
 func TestGetItemByUkList(t *testing.T) {
-	params := []int64{389102355586482177, 389102378000842753, 389102386574000129, 389103705900711937}
+	params := make(map[int64]interface{}, 0)
+	params[389102355586482177] = 0
+	params[389102378000842753] = 0
+	params[389102386574000129] = 0
+	params[389103705900711937] = 0
 	result, err := m.GetItemByUkList(params)
 	if err != nil {
 		t.Error(err)

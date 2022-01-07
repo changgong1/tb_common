@@ -8,7 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"strings"
 	"time"
 )
 
@@ -141,7 +140,7 @@ func (s *Model) getUkByItemListCheckExist(ns []string) (map[string]int64, error)
 			ns1 = append(ns1, v)
 		}
 		for i, v := range ns1 {
-			body = append(body, bson.M{"n": strings.ToLower(v), "uk": ids[i]})
+			body = append(body, bson.M{"n": v, "uk": ids[i]})
 		}
 		opts := options.InsertMany().SetOrdered(false)
 		_, err = s.Col.InsertMany(context.Background(), body, opts)
@@ -193,7 +192,7 @@ func (s *Model) getUkByItems(ns ...string) (map[string]int64, error) {
 			ns1 = append(ns1, v)
 		}
 		for i, v := range ns1 {
-			body = append(body, bson.M{"n": strings.ToLower(v), "uk": ids[i]})
+			body = append(body, bson.M{"n": v, "uk": ids[i]})
 		}
 		opts := options.InsertMany().SetOrdered(false)
 		_, err = s.Col.InsertMany(context.Background(), body, opts)

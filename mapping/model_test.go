@@ -87,9 +87,7 @@ func TestGetUkByItemList(t *testing.T) {
 
 func TestGetUkByItemListCheckExist(t *testing.T) {
 	params := make(map[string]interface{}, 0)
-	params["test"] = 0
-	params["test"] = 0
-	params["test"] = 0
+	params[""] = 0
 	params["test"] = 0
 	result, err := m.GetUkByItemListCheckExist(params)
 	if err != nil {

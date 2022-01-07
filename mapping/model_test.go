@@ -75,8 +75,8 @@ func TestGetUkByItemCheckExist(t *testing.T) {
 }
 
 func TestGetUkByItemList(t *testing.T) {
-	params := []string{"test", "test1", "test2"}
-	result, err := m.GetUkByItemList(params)
+	params := []string{"test1", "test", "test2"}
+	result, err := m.GetUkByItems(params...)
 	if err != nil {
 		t.Error(err)
 		return

@@ -59,7 +59,7 @@ func (s *Mapping) GetUkByItemListCheckExist(ns []string) ([]*Item, error) {
 	return s.model.getUkByItemListCheckExist(ns)
 }
 
-func (s *Mapping) GetUkByItems(ns ...string) ([]*Item, error) {
+func (s *Mapping) GetUkByItems(ns ...string) (map[string]int64, error) {
 	return s.model.getUkByItems(ns...)
 }
 
@@ -77,6 +77,6 @@ func (s *Mapping) GetItemByUkList(uks []int64) ([]*Item, error) {
 	return s.model.getItemByUkList(uks)
 }
 
-func (s *Mapping) GetItemsByUks(uks ...int64) ([]*Item, error) {
+func (s *Mapping) GetItemsByUks(uks ...int64) (map[int64]string, error) {
 	return s.model.getItemByUks(uks...)
 }

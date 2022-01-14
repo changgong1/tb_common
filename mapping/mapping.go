@@ -53,7 +53,7 @@ func (s *Mapping) GetUkByItemCheckExist(n string) (*Item, error) {
 }
 
 func (s *Mapping) GetUkByItemList(params map[string]interface{}) ([]*Item, error) {
-	if len(params) > 200 {
+	if len(params) > 500 {
 		return nil, errors.New("params maximum limit exceeded")
 	}
 	ns := make([]string, 0)
@@ -64,7 +64,7 @@ func (s *Mapping) GetUkByItemList(params map[string]interface{}) ([]*Item, error
 }
 
 func (s *Mapping) GetUkByItemListCheckExist(params map[string]interface{}) (map[string]int64, error) {
-	if len(params) > 200 {
+	if len(params) > 500 {
 		return nil, errors.New("params maximum limit exceeded")
 	}
 	ns := make([]string, 0)
@@ -75,7 +75,7 @@ func (s *Mapping) GetUkByItemListCheckExist(params map[string]interface{}) (map[
 }
 
 func (s *Mapping) GetUkByItems(ns ...string) (map[string]int64, error) {
-	if len(ns) > 200 {
+	if len(ns) > 500 {
 		return nil, errors.New("params maximum limit exceeded")
 	}
 	return s.model.getUkByItems(ns...)
@@ -92,10 +92,10 @@ func (s *Mapping) GetItemByUk(uk int64) (*Item, error) {
 }
 
 func (s *Mapping) GetItemByUkList(params map[int64]interface{}) ([]*Item, error) {
-	if len(params) > 200 {
+	if len(params) > 500 {
 		return nil, errors.New("params maximum limit exceeded")
 	}
-	if len(params) > 200 {
+	if len(params) > 500 {
 		return nil, errors.New("params maximum limit exceeded")
 	}
 	uks := make([]int64, 0)
@@ -106,7 +106,7 @@ func (s *Mapping) GetItemByUkList(params map[int64]interface{}) ([]*Item, error)
 }
 
 func (s *Mapping) GetItemsByUks(uks ...int64) (map[int64]string, error) {
-	if len(uks) > 200 {
+	if len(uks) > 500 {
 		return nil, errors.New("params maximum limit exceeded")
 	}
 	return s.model.getItemByUks(uks...)

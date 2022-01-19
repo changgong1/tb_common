@@ -42,6 +42,20 @@ func (s *Mapping) GetUkByItem(n string) (*Item, error) {
 	return s.model.getUkByItem(n)
 }
 
+func (s *Mapping) GetUkByN(n string) int64 {
+	if s.cacheSwitch {
+		result, err := s.NCache.Get(n)
+		if err == nil && result != nil {
+			return result.(*Item).Uk
+		}
+	}
+	item, err := s.model.getUkByItem(n)
+	if err != nil || item == nil {
+		return 0
+	}
+	return item.Uk
+}
+
 func (s *Mapping) GetUkByItemCheckExist(n string) (*Item, error) {
 	if s.cacheSwitch {
 		result, err := s.NCache.Get(n)
@@ -89,6 +103,20 @@ func (s *Mapping) GetItemByUk(uk int64) (*Item, error) {
 		}
 	}
 	return s.model.getItemByUk(uk)
+}
+
+func (s *Mapping) GetNByUk(uk int64) string {
+	if s.cacheSwitch {
+		result, err := s.UkCache.Get(uk)
+		if err == nil && result != nil {
+			return result.(*Item).N
+		}
+	}
+	item, err := s.model.getItemByUk(uk)
+	if err != nil || item == nil {
+		return ""
+	}
+	return item.N
 }
 
 func (s *Mapping) GetItemByUkList(params map[int64]interface{}) ([]*Item, error) {

@@ -55,7 +55,7 @@ func newModel(config *AddressConfig) (*Model, error) {
 	return model1, nil
 }
 
-func (s *Model) getUkByItem(n string) (*Item, error) {
+func (s *Model) getItemByN(n string) (*Item, error) {
 	item := new(Item)
 	if err := s.Col.FindOne(context.Background(), bson.M{"n": n}).Decode(&item); err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -67,7 +67,7 @@ func (s *Model) getUkByItem(n string) (*Item, error) {
 	return item, nil
 }
 
-func (s *Model) getUkByItemCheckExist(n string) (*Item, error) {
+func (s *Model) getItemByNCheckExist(n string) (*Item, error) {
 	item := new(Item)
 	if err := s.Col.FindOne(context.Background(), bson.M{"n": n}).Decode(&item); err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -92,7 +92,7 @@ func (s *Model) getUkByItemCheckExist(n string) (*Item, error) {
 	return item, nil
 }
 
-func (s *Model) getUkByItemList(ns []string) ([]*Item, error) {
+func (s *Model) getItemListByNs(ns []string) ([]*Item, error) {
 	list := make([]*Item, 0)
 	cursor, err := s.Col.Find(context.Background(), bson.M{"n": bson.M{"$in": ns}})
 	if err != nil {
@@ -107,7 +107,7 @@ func (s *Model) getUkByItemList(ns []string) ([]*Item, error) {
 	return list, nil
 }
 
-func (s *Model) getUkByItemListCheckExist(ns []string) (map[string]int64, error) {
+func (s *Model) getUksByNsCheckExist(ns []string) (map[string]int64, error) {
 	dataMap := make(map[string]int64, 0)
 	list := make([]*Item, 0)
 	cursor, err := s.Col.Find(context.Background(), bson.M{"n": bson.M{"$in": ns}})
@@ -148,7 +148,7 @@ func (s *Model) getUkByItemListCheckExist(ns []string) (map[string]int64, error)
 			log.Errorf("insert many error %v", err)
 			return nil, err
 		}
-		items, err := s.getUkByItemList(ns1)
+		items, err := s.getItemListByNs(ns1)
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +159,7 @@ func (s *Model) getUkByItemListCheckExist(ns []string) (map[string]int64, error)
 	return dataMap, nil
 }
 
-func (s *Model) getUkByItems(ns ...string) (map[string]int64, error) {
+func (s *Model) getUksByNs(ns ...string) (map[string]int64, error) {
 	dataMap := make(map[string]int64, 0)
 	list := make([]*Item, 0)
 	cursor, err := s.Col.Find(context.Background(), bson.M{"n": bson.M{"$in": ns}})
@@ -200,7 +200,7 @@ func (s *Model) getUkByItems(ns ...string) (map[string]int64, error) {
 			log.Errorf("insert many error %v", err)
 			return nil, err
 		}
-		items, err := s.getUkByItemList(ns1)
+		items, err := s.getItemListByNs(ns1)
 		if err != nil {
 			return nil, err
 		}
@@ -220,7 +220,7 @@ func (s *Model) getItemByUk(uk int64) (*Item, error) {
 	return item, nil
 }
 
-func (s *Model) getItemByUkList(uks []int64) ([]*Item, error) {
+func (s *Model) getItemListByUks(uks []int64) ([]*Item, error) {
 	list := make([]*Item, 0)
 	cursor, err := s.Col.Find(context.Background(), bson.M{"uk": bson.M{"$in": uks}})
 	if err != nil {
@@ -234,7 +234,7 @@ func (s *Model) getItemByUkList(uks []int64) ([]*Item, error) {
 	return list, nil
 }
 
-func (s *Model) getItemByUks(uks ...int64) (map[int64]string, error) {
+func (s *Model) getNsByUks(uks ...int64) (map[int64]string, error) {
 	dataMap := make(map[int64]string)
 	list := make([]*Item, 0)
 	cursor, err := s.Col.Find(context.Background(), bson.M{"uk": bson.M{"$in": uks}})

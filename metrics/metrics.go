@@ -16,9 +16,9 @@ func init() {
 
 var pusher *push.Pusher
 
-func Init(gateway string, instanceName string) {
+func Init(gateway string, jobName string) {
 	hostname, _ := os.Hostname()
-	pusher = push.New(gateway, instanceName).
+	pusher = push.New(gateway, jobName).
 		Gatherer(DefaultRegistry).
 		Grouping("instance", hostname)
 

@@ -1,14 +1,14 @@
 package gid
 
 import (
+	"encoding/json"
+	"errors"
+	log "github.com/cihub/seelog"
 	"io/ioutil"
 	"net/http"
-	"encoding/json"
-	log "github.com/cihub/seelog"
 	"strconv"
 	"strings"
 	"time"
-	"errors"
 )
 
 var client = &http.Client{}
@@ -29,7 +29,7 @@ type Result struct {
 	Timestamp int64 `json:"time"`
 }
 
-func NewServer(urlPrefix string) (*Server) {
+func NewServer(urlPrefix string) *Server {
 	if urlPrefix == "" {
 		urlPrefix = "http://sonyflake.live.xunlei.com/"
 	}
@@ -38,29 +38,67 @@ func NewServer(urlPrefix string) (*Server) {
 	}
 	return S
 }
+
 func (s *Server) GetId() (int64, error) {
-	result, err := s.Get()
-	if err != nil {
-		return -1, err
+	var err error
+	var result *Result
+	var reties int64 = 6
+	for {
+		if reties <= 0 {
+			break
+		}
+		reties--
+		result, err = s.Get()
+		if err != nil || result == nil {
+			log.Errorf("get error %v", err)
+			time.Sleep(time.Millisecond * 100)
+		} else {
+			return result.Id, nil
+		}
 	}
-	return result.Id, nil
+	return -1, err
+}
+
+func (s *Server) GetIds(num int) ([]int64, error) {
+	var err error
+	var result *Result
+	var reties int64 = 6
+	ids := make([]int64, 0)
+	for {
+		if reties <= 0 {
+			break
+		}
+		reties--
+		result, err = s.Get()
+		if err != nil || result == nil {
+			log.Errorf("get error %v", err)
+			time.Sleep(time.Millisecond * 100)
+		} else {
+			ids = append(ids, result.Id)
+		}
+		if len(ids) == num {
+			return ids, err
+		}
+	}
+	return nil, err
 }
 
 func (s *Server) Get() (*Result, error) {
 	req, err := http.NewRequest("POST", s.UrlPrefix, strings.NewReader(""))
 	if err != nil {
-		log.Errorf("getId request error %v", err)
 		return nil, err
 	}
 	resp, err := client.Do(req)
-	if resp.Body != nil {
-		defer resp.Body.Close()
-	}
 	if err != nil {
 		return nil, err
 	}
+	if resp == nil {
+		return nil, errors.New("resp is nil")
+	}
+	if resp.Body != nil {
+		defer resp.Body.Close()
+	}
 	if status := resp.StatusCode; status < 200 || status >= 300 {
-		log.Warnf("status code is not 200")
 		return nil, errors.New("status code is " + strconv.Itoa(status))
 	}
 	if body, err := ioutil.ReadAll(resp.Body); err != nil {

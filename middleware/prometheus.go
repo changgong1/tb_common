@@ -39,16 +39,13 @@ type RequestCounterURLLabelMappingFn func(c *gin.Context) string
 
 // Prometheus contains the metrics gathered by the instance and its path
 type Prometheus struct {
-	reqCnt               *prometheus.CounterVec
-	interfaceReqCnt      *prometheus.CounterVec
-	reqDur, reqSz, resSz prometheus.Summary
-	router               *gin.Engine
-	listenAddress        string
-
-	Ppg PrometheusPushGateway
-
-	MetricsPath string
-
+	reqCnt                  *prometheus.CounterVec
+	interfaceReqCnt         *prometheus.CounterVec
+	reqDur, reqSz, resSz    prometheus.Summary
+	router                  *gin.Engine
+	listenAddress           string
+	MetricsPath             string
+	Ppg                     PrometheusPushGateway
 	ReqCntURLLabelMappingFn RequestCounterURLLabelMappingFn
 }
 
@@ -71,7 +68,6 @@ type PrometheusPushGateway struct {
 
 // NewPrometheus generates a new set of metrics with a certain subsystem name
 func NewPrometheus(subsystem string) *Prometheus {
-
 	p := &Prometheus{
 		MetricsPath: defaultMetricPath,
 		ReqCntURLLabelMappingFn: func(c *gin.Context) string {
@@ -79,7 +75,6 @@ func NewPrometheus(subsystem string) *Prometheus {
 		},
 	}
 	p.registerMetrics(subsystem)
-
 	return p
 }
 
@@ -107,7 +102,6 @@ func (p *Prometheus) SetListenAddress(address string) {
 }
 
 func (p *Prometheus) setMetricsPath(e *gin.Engine) {
-
 	if p.listenAddress != "" {
 		p.router.GET(p.MetricsPath, prometheusHandler())
 		p.runServer()
@@ -117,14 +111,12 @@ func (p *Prometheus) setMetricsPath(e *gin.Engine) {
 }
 
 func (p *Prometheus) setMetricsPathWithAuth(e *gin.Engine, accounts gin.Accounts) {
-
 	if p.listenAddress != "" {
 		p.router.GET(p.MetricsPath, gin.BasicAuth(accounts), prometheusHandler())
 		p.runServer()
 	} else {
 		e.GET(p.MetricsPath, gin.BasicAuth(accounts), prometheusHandler())
 	}
-
 }
 
 func (p *Prometheus) runServer() {
@@ -135,10 +127,8 @@ func (p *Prometheus) runServer() {
 
 func (p *Prometheus) getMetrics() []byte {
 	response, _ := http.Get(p.Ppg.MetricsURL)
-
 	defer response.Body.Close()
 	body, _ := ioutil.ReadAll(response.Body)
-
 	return body
 }
 
@@ -155,7 +145,7 @@ func (p *Prometheus) sendMetricsToPushGateway(metrics []byte) {
 	client := &http.Client{}
 	_, err = client.Do(req)
 	if err != nil {
-		log.Error("Error sending to push gatway: " + err.Error())
+		log.Errorf("sending to pushgateway error %v", err)
 	}
 }
 
@@ -169,16 +159,14 @@ func (p *Prometheus) startPushTicker() {
 }
 
 func (p *Prometheus) registerMetrics(subsystem string) {
-
 	p.reqCnt = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Subsystem: subsystem,
 			Name:      "requests_total",
 			Help:      "How many HTTP requests processed, partitioned by status code and HTTP method.",
 		},
-		[]string{"code", "method", "handler", "host", "url"},
+		[]string{"code", "method", "path"},
 	)
-
 	if err := prometheus.Register(p.reqCnt); err != nil {
 		log.Info("reqCnt could not be registered: ", err)
 	} else {
@@ -191,9 +179,8 @@ func (p *Prometheus) registerMetrics(subsystem string) {
 			Name:      "interface_requests_total",
 			Help:      "How many HTTP requests processed, partitioned by status code and HTTP method.",
 		},
-		[]string{"code", "method", "handler", "host"},
+		[]string{"code", "method", "handler"},
 	)
-
 	if err := prometheus.Register(p.interfaceReqCnt); err != nil {
 		log.Info("interfaceReqCnt could not be registered: ", err)
 	} else {
@@ -207,7 +194,6 @@ func (p *Prometheus) registerMetrics(subsystem string) {
 			Help:      "The HTTP request latencies in seconds.",
 		},
 	)
-
 	if err := prometheus.Register(p.reqDur); err != nil {
 		log.Info("reqDur could not be registered: ", err)
 	} else {
@@ -221,7 +207,6 @@ func (p *Prometheus) registerMetrics(subsystem string) {
 			Help:      "The HTTP request sizes in bytes.",
 		},
 	)
-
 	if err := prometheus.Register(p.reqSz); err != nil {
 		log.Info("reqSz could not be registered: ", err)
 	} else {
@@ -235,7 +220,6 @@ func (p *Prometheus) registerMetrics(subsystem string) {
 			Help:      "The HTTP response sizes in bytes.",
 		},
 	)
-
 	if err := prometheus.Register(p.resSz); err != nil {
 		log.Info("resSz could not be registered: ", err)
 	} else {
@@ -273,9 +257,8 @@ func (p *Prometheus) handlerFunc() gin.HandlerFunc {
 		resSz := float64(c.Writer.Size())
 
 		p.reqDur.Observe(elapsed)
-		url := p.ReqCntURLLabelMappingFn(c)
-		p.reqCnt.WithLabelValues(status, c.Request.Method, c.HandlerName(), c.Request.Host, url).Inc()
-		p.interfaceReqCnt.WithLabelValues(status, c.Request.Method, c.HandlerName(), c.Request.Host).Inc()
+		p.reqCnt.WithLabelValues(status, c.Request.Method, c.Request.URL.Path).Inc()
+		p.interfaceReqCnt.WithLabelValues(status, c.Request.Method, c.HandlerName()).Inc()
 		p.reqSz.Observe(float64(reqSz))
 		p.resSz.Observe(resSz)
 	}

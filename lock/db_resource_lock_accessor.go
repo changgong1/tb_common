@@ -166,11 +166,11 @@ func (s *DbResourceLockAccessor) getResourceLockList(tableName string, interval 
 	querySql += "lock_time < ? ORDER BY id ASC LIMIT ?"
 	lastLockTime := time.Now().UnixNano()/1000000 - (interval.IntervalTime-interval.LockTime)*interval.Unit + interval.Unit/2
 	rows, err := s.dbTemplate.Query(querySql, lastLockTime, num)
-	defer rows.Close()
 	if err != nil {
 		log.Errorf("get resource lock list from database error, %v", err)
 		return nil, err
 	}
+	defer rows.Close()
 	resourceLockList := []*ResourceLock{}
 	for rows.Next() {
 		resourceLock := &ResourceLock{}

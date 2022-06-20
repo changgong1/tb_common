@@ -4,12 +4,12 @@
 package middleware
 
 import (
+	log "github.com/cihub/seelog"
+	"github.com/gin-gonic/gin"
+	"github.com/mattn/go-isatty"
 	"io"
 	"os"
 	"time"
-	log "github.com/cihub/seelog"
-	"github.com/mattn/go-isatty"
-	"github.com/gin-gonic/gin"
 )
 
 var (
@@ -45,12 +45,18 @@ func ErrorLoggerT(typ gin.ErrorType) gin.HandlerFunc {
 // Logger instances a Logger middleware that will write the logs to gin.DefaultWriter
 // By default gin.DefaultWriter = os.Stdout
 func Logger() gin.HandlerFunc {
-	return LoggerWithWriter(gin.DefaultWriter)
+	return LoggerWithWriter(gin.DefaultWriter, -1)
+}
+
+// Logger instances a Logger middleware that will write the logs to gin.DefaultWriter
+// By default gin.DefaultWriter = os.Stdout
+func LoggerWithLatency(latency int64) gin.HandlerFunc {
+	return LoggerWithWriter(gin.DefaultWriter, latency)
 }
 
 // LoggerWithWriter instance a Logger middleware with the specified writter buffer.
 // Example: os.Stdout, a file opened in write mode, a socket...
-func LoggerWithWriter(out io.Writer, notlogged ...string) gin.HandlerFunc {
+func LoggerWithWriter(out io.Writer, latency1 int64, notlogged ...string) gin.HandlerFunc {
 	isTerm := true
 
 	if w, ok := out.(*os.File); !ok ||
@@ -93,15 +99,17 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) gin.HandlerFunc {
 			}
 			comment := c.Errors.ByType(gin.ErrorTypePrivate).String()
 
-			log.Infof("[GIN] %v |%s %3d %s| %13v | %15s |%s  %s %-7s %s\n%s",
-				end.Format("2006/01/02 - 15:04:05"),
-				statusColor, statusCode, reset,
-				latency,
-				clientIP,
-				methodColor, method, reset,
-				path,
-				comment,
-			)
+			if latency1 > 0 && latency > time.Millisecond*time.Duration(latency1) {
+				log.Infof("[GIN] %v |%s %3d %s| %13v | %15s |%s  %s %-7s %s\n%s",
+					end.Format("2006/01/02 - 15:04:05"),
+					statusColor, statusCode, reset,
+					latency,
+					clientIP,
+					methodColor, method, reset,
+					path,
+					comment,
+				)
+			}
 		}
 	}
 }
